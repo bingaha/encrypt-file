@@ -16,3 +16,9 @@ hex = "0.4"
 walkdir = "2"
 filetime = "0.2"
 rfd = "0.15"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+codegen-units = 1
