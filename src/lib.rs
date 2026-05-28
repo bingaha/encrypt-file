@@ -1,3 +1,4 @@
+pub mod app;
 pub mod crypto;
 pub mod dir_ops;
 pub mod error;

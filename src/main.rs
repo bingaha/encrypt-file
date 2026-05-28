@@ -1,5 +1,3 @@
-use vault::app::VaultApp;
-
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -10,6 +8,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Vault - 文件加密工具",
         options,
-        Box::new(|_cc| Ok(Box::new(app::VaultApp::default()))),
+        Box::new(|_cc| Ok(Box::new(vault::app::VaultApp::default()))),
     )
 }
