@@ -405,9 +405,11 @@ impl VaultApp {
             ui.add_space(10.0);
             if ui.button("重试").clicked() {
                 let was_single_file = self.single_file_path.is_some();
-                self.reset();
+                self.password.clear();
+                self.confirm_password.clear();
+                self.error_message.clear();
                 if was_single_file {
-                    self.mode = AppMode::SingleFileUnencrypted;
+                    self.detect_single_file_mode();
                 } else {
                     self.detect_directory_mode();
                 }
