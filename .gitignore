@@ -1,0 +1,19 @@
+# Rust build artifacts
+/target/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Claude Code
+.claude/
+docs/superpowers/
+
+# Debug
+*.pdb
