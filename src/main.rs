@@ -1,12 +1,4 @@
-mod app;
-mod crypto;
-mod dir_ops;
-mod error;
-mod file_ops;
-mod folder_hide;
-mod metadata;
-mod name_encrypt;
-mod validate;
+use vault::app::VaultApp;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
