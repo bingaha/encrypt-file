@@ -43,7 +43,7 @@ pub fn would_exceed_name_limit(name: &str, is_file: bool) -> bool {
     let enc_bytes = name.as_bytes().len();
     let hex_len = enc_bytes * 2;
     let ext_len = if is_file { FILE_EXT.len() } else { 0 };
-    (hex_len + ext_len) > 240
+    (hex_len + ext_len) > 512
 }
 
 #[cfg(test)]
@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_would_exceed_name_limit_long() {
-        let very_long = "x".repeat(200);
+        let very_long = "x".repeat(260);
         assert!(would_exceed_name_limit(&very_long, true));
     }
 }
