@@ -100,11 +100,15 @@ impl VaultApp {
 
         match dir_ops::encrypt_directory(&exe_dir, self.password.as_bytes()) {
             Ok(processed) => {
+                let mut msg = format!("加密完成，共处理 {} 个文件/目录", processed.len());
                 if self.hide_folder {
-                    let _ = folder_hide::hide_folder(&exe_dir);
+                    match folder_hide::hide_folder(&exe_dir) {
+                        Ok(()) => msg.push_str("（文件夹已隐藏）"),
+                        Err(e) => msg.push_str(&format!("（文件夹隐藏失败: {}）", e)),
+                    }
                 }
                 self.mode = AppMode::Done;
-                self.status_message = format!("加密完成，共处理 {} 个文件/目录", processed.len());
+                self.status_message = msg;
             }
             Err(e) => {
                 self.mode = AppMode::Error;
