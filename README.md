@@ -1,153 +1,155 @@
 # Vault
 
-A lightweight Windows file & folder encryption tool. Single executable, zero installation.
+[English](README_EN.md)
 
-## Features
+轻量级 Windows 文件与文件夹加密工具。编译为单个 exe，无需安装。
 
-- **Directory Mode** — Place the exe in any folder, run it, and encrypt/decrypt everything inside with one click. File and directory names are also encrypted.
-- **Single File Mode** — Encrypt individual files with self-contained metadata. The encrypted file can be shared independently; the recipient only needs the same exe and the password.
-- **Folder Hiding** — Optionally hides the encrypted directory using a Windows CLSID rename trick, making it invisible in File Explorer.
-- **Drag & Drop** — Drag a file onto the window to instantly switch to single-file mode.
-- **No Installation** — Compiles to a single `.exe` (~4 MB). No runtime dependencies.
+## 功能特性
 
-## Screenshots
+- **目录模式** — 将 exe 放入任意文件夹，双击运行即可一键加密/解密目录下所有文件和子目录，文件名和目录名同步加密
+- **单文件模式** — 加密单个文件，元数据自包含，加密文件可独立分享，接收方只需相同 exe 和密码即可解密还原
+- **文件夹隐藏** — 可选通过 Windows CLSID 重命名技术隐藏加密目录，在资源管理器中不可见
+- **拖拽支持** — 将文件拖入窗口即可自动切换到单文件模式并选中该文件
+- **零安装** — 编译为单个 `.exe`（约 4MB），无运行时依赖
 
-| Directory Mode | Single File Mode |
+## 界面预览
+
+| 目录模式 | 单文件模式 |
 |:-:|:-:|
-| ![directory](docs/directory.png) | ![single](docs/single.png) |
+| ![目录模式](docs/directory.png) | ![单文件模式](docs/single.png) |
 
-## Getting Started
+## 快速开始
 
-### Download
+### 下载
 
-Grab the latest `vault.exe` from [Releases](../../releases).
+从 [Releases](../../releases) 获取最新的 `vault.exe`。
 
-### Build from Source
+### 从源码构建
 
 ```bash
 cargo build --release
 ```
 
-Output: `target/release/vault.exe`
+产出：`target/release/vault.exe`
 
-Requires Rust 1.70+ and Windows.
+需要 Rust 1.70+ 和 Windows 环境。
 
-## Usage
+## 使用方式
 
-### Directory Encryption
+### 目录加密
 
-1. Copy `vault.exe` into the target folder
-2. Double-click to run
-3. The app auto-detects unencrypted content and shows the encryption UI
-4. Set a password, optionally check "Hide folder after encryption"
-5. Click **Encrypt**
-6. All files and subdirectories are encrypted in-place. You can take the exe with you — the folder now contains only garbled filenames and unreadable content.
+1. 将 `vault.exe` 复制到目标文件夹
+2. 双击运行
+3. 程序自动检测未加密状态，显示加密界面
+4. 设置密码，可选勾选"加密后隐藏文件夹"
+5. 点击 **开始加密**
+6. 加密完成后可带走 exe — 目录中只剩乱码文件名和不可读的文件内容
 
-### Directory Decryption
+### 目录解密
 
-1. Put `vault.exe` back into the encrypted folder
-2. Double-click to run
-3. The app detects encrypted content and shows the decryption UI
-4. Enter the password, click **Decrypt**
-5. Everything is restored — files, names, directory structure, and timestamps.
+1. 将 `vault.exe` 放回加密目录
+2. 双击运行
+3. 程序自动检测已加密状态，显示解密界面
+4. 输入密码，点击 **开始解密**
+5. 所有文件、文件名、目录结构和时间戳完整还原
 
-### Single File Encryption / Decryption
+### 单文件加密 / 解密
 
-1. Run `vault.exe` (from anywhere)
-2. Switch to the **Single File** tab
-3. Pick a file (or drag one in), set a password, click **Encrypt** / **Decrypt**
+1. 运行 `vault.exe`（任意位置均可）
+2. 切换到 **单文件** 标签页
+3. 选择文件（或拖拽文件到窗口），设置密码，点击 **开始加密** / **开始解密**
 
-## Encryption Details
+## 加密方案
 
-### Overview
+### 总览
 
-| Component | Algorithm |
+| 组件 | 算法 |
 |---|---|
-| **Content encryption** | AES-256-CTR (32-bit big-endian counter) |
-| **Key derivation** | PBKDF2-HMAC-SHA256, 100,000 iterations |
-| **Salt** | 16 bytes, CSPRNG per file |
-| **Nonce / IV** | 16 bytes (128-bit), CSPRNG per file |
-| **Metadata integrity** | CRC32 checksum |
-| **Filename encryption** | AES-256-CTR with deterministic salt |
+| **内容加密** | AES-256-CTR（32 位大端计数器） |
+| **密钥派生** | PBKDF2-HMAC-SHA256，100,000 次迭代 |
+| **盐值（Salt）** | 16 字节，每文件独立 CSPRNG 随机生成 |
+| **随机数（Nonce）** | 16 字节（128 位），每文件独立 CSPRNG 随机生成 |
+| **元数据完整性** | CRC32 校验和 |
+| **文件名加密** | AES-256-CTR，确定性盐值 |
 
-### Content Encryption
+### 内容加密
 
-Each file is encrypted with **AES-256-CTR** using a unique key derived from the user's password.
+每个文件使用 **AES-256-CTR** 加密，密钥由用户密码派生，每文件独立。
 
 ```
-password + salt (16 B, random) ──► PBKDF2-HMAC-SHA256 (100k rounds) ──► 256-bit key
-key + nonce (16 B, random) ──► AES-256-CTR ──► ciphertext
+密码 + 盐值 (16B, 随机) ──► PBKDF2-HMAC-SHA256 (100k 轮) ──► 256 位密钥
+密钥 + 随机数 (16B, 随机) ──► AES-256-CTR ──► 密文
 ```
 
-**Partial encryption for large files (> 128 KiB):** only the first 64 KiB and last 64 KiB are encrypted. The middle is left untouched, giving near-instant processing for large files. Small files (<= 128 KiB) are fully encrypted.
+**大文件部分加密（> 128 KiB）：** 仅加密文件头部和尾部各 64 KiB，中间内容不动，大文件处理接近瞬间完成。小文件（<= 128 KiB）整体加密。
 
-### Metadata
+### 元数据结构
 
-Each encrypted file has a metadata block appended to the end:
+每个加密文件末尾追加元数据块：
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ Magic        "VALT" (4 bytes)                   │
-│ Salt         (16 bytes, plaintext)              │
-│ Nonce        (16 bytes, plaintext)              │
-│ Meta Nonce   (16 bytes, plaintext)              │
-│ Encrypted Payload:                              │
-│   ├─ Original filename   (u16 len + UTF-8)     │
-│   ├─ Original file size  (u64 LE)              │
-│   ├─ Original mtime      (i64 LE, Unix secs)   │
-│   └─ CRC32 checksum      (u32 LE)              │
-│ Total length             (u32 LE, at EOF)       │
+│ 魔术字       "VALT" (4 字节)                    │
+│ 盐值         (16 字节, 明文)                     │
+│ 随机数       (16 字节, 明文)                     │
+│ 元数据随机数 (16 字节, 明文)                     │
+│ 加密载荷:                                       │
+│   ├─ 原始文件名     (u16 长度 + UTF-8)          │
+│   ├─ 原始文件大小   (u64 小端)                  │
+│   ├─ 原始修改时间   (i64 小端, Unix 秒)         │
+│   └─ CRC32 校验和   (u32 小端)                  │
+│ 总长度               (u32 小端, 位于文件末尾)    │
 └─────────────────────────────────────────────────┘
 ```
 
-The payload is encrypted with a **separate nonce** (`meta_nonce`) so metadata and content keystreams never overlap.
+载荷使用独立的随机数（`meta_nonce`）加密，确保元数据与文件内容的密钥流互不重叠。
 
-### Filename Encryption
+### 文件名加密
 
-File and directory names are encrypted deterministically (same password + name = same ciphertext) to allow directory-level operations without a name lookup table:
+文件名和目录名采用确定性加密（相同密码 + 相同名称 = 相同密文），便于目录级操作而无需维护名称映射表：
 
 ```
-password + fixed salt ──► PBKDF2 ──► key
-key + zero nonce ──► AES-256-CTR(name) ──► hex-encoded + ".dat"
+密码 + 固定盐值 ──► PBKDF2 ──► 密钥
+密钥 + 零随机数 ──► AES-256-CTR(名称) ──► 十六进制编码 + ".dat"
 ```
 
-### Security Notes
+### 安全说明
 
-- **CTR mode is stream-only** — provides confidentiality but not authentication. A CRC32 checksum guards against accidental corruption and wrong-password detection, but is not a cryptographic MAC.
-- **Partial encryption** leaks the middle portion of large files (> 128 KiB). This is a deliberate speed/size trade-off.
-- **Deterministic name encryption** means identical filenames produce identical ciphertext, leaking name equality.
-- **PBKDF2 at 100k iterations** — reasonable, but memory-hard KDFs (Argon2) would offer stronger resistance against GPU/ASIC attacks.
+- **CTR 模式仅提供机密性** — 不提供完整性和认证。CRC32 校验和用于防止意外损坏和密码错误检测，但不是加密级消息认证码
+- **部分加密** 会泄露大文件（> 128 KiB）的中间部分，这是速度与安全性的有意权衡
+- **确定性文件名加密** 意味着相同文件名产生相同密文，会泄露名称相等性
+- **PBKDF2 100k 轮迭代** — 合理但非最高标准，内存硬型 KDF（如 Argon2）对 GPU/ASIC 攻击具有更强的抵抗力
 
-## Architecture
+## 项目结构
 
 ```
 src/
-├── main.rs          # Entry point, window setup, font loading
-├── app.rs           # GUI (egui), mode detection, user interaction
-├── crypto.rs        # AES-256-CTR, PBKDF2 key derivation
-├── file_ops.rs      # File encrypt/decrypt (partial or full)
-├── dir_ops.rs       # Recursive directory encrypt/decrypt
-├── name_encrypt.rs  # Deterministic filename/dirname encryption
-├── metadata.rs      # Metadata struct, serialization, detection
-├── folder_hide.rs   # Windows CLSID-based folder hiding
-├── validate.rs      # Pre-encryption validation
-└── error.rs         # Error types
+├── main.rs          # 程序入口，窗口配置，字体加载
+├── app.rs           # GUI 界面（egui），模式检测，用户交互
+├── crypto.rs        # AES-256-CTR 加密，PBKDF2 密钥派生
+├── file_ops.rs      # 文件加密/解密（部分或完整）
+├── dir_ops.rs       # 递归目录加密/解密
+├── name_encrypt.rs  # 确定性文件名/目录名加密
+├── metadata.rs      # 元数据结构体，序列化，检测
+├── folder_hide.rs   # Windows CLSID 文件夹隐藏
+├── validate.rs      # 加密前校验
+└── error.rs         # 错误类型
 ```
 
-## Dependencies
+## 依赖
 
-| Crate | Purpose |
+| Crate | 用途 |
 |---|---|
-| `aes` + `ctr` | AES-256-CTR cipher |
-| `pbkdf2` + `sha2` | PBKDF2-HMAC-SHA256 key derivation |
-| `rand` | CSPRNG for salts and nonces |
-| `crc32fast` | CRC32 integrity checksum |
-| `hex` | Hex encoding for encrypted filenames |
-| `walkdir` | Recursive directory traversal |
-| `filetime` | Preserve file modification timestamps |
-| `eframe` + `egui` | Cross-platform GUI framework |
-| `rfd` | Native file dialogs |
+| `aes` + `ctr` | AES-256-CTR 密码算法 |
+| `pbkdf2` + `sha2` | PBKDF2-HMAC-SHA256 密钥派生 |
+| `rand` | CSPRNG 安全随机数生成 |
+| `crc32fast` | CRC32 完整性校验 |
+| `hex` | 加密文件名十六进制编码 |
+| `walkdir` | 递归目录遍历 |
+| `filetime` | 保留文件修改时间 |
+| `eframe` + `egui` | 跨平台 GUI 框架 |
+| `rfd` | 原生文件选择对话框 |
 
-## License
+## 许可证
 
 MIT
