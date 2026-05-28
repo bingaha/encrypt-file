@@ -33,7 +33,7 @@ impl Default for VaultApp {
             mode: AppMode::Detecting,
             password: String::new(),
             confirm_password: String::new(),
-            hide_folder: true,
+            hide_folder: false,
             error_message: String::new(),
             status_message: String::new(),
             single_file_path: None,
@@ -476,8 +476,9 @@ impl VaultApp {
         Self::draw_readonly_row(ui, "当前目录", &Self::current_directory_label());
         ui.add_space(8.0);
         self.draw_password_pair(ui);
-        ui.add_space(2.0);
-        ui.checkbox(&mut self.hide_folder, "加密后隐藏文件夹");
+        // 隐藏文件夹功能暂不可用，UI 隐藏但保留代码
+        // ui.add_space(2.0);
+        // ui.checkbox(&mut self.hide_folder, "加密后隐藏文件夹");
         ui.add_space(10.0);
         if self.draw_action_button(ui).clicked() {
             self.error_message.clear();
