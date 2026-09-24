@@ -1,14 +1,15 @@
 # Vault
 
-A lightweight Windows file & folder encryption tool. Single executable, zero installation.
+[中文](README.md)
+
+A lightweight cross-platform (Windows / Linux) file & folder encryption tool. Single executable, zero installation.
 
 ## Features
 
-- **Directory Mode** — Place the exe in any folder, run it, and encrypt/decrypt everything inside with one click. File and directory names are also encrypted.
-- **Single File Mode** — Encrypt individual files with self-contained metadata. The encrypted file can be shared independently; the recipient only needs the same exe and the password.
-- **Folder Hiding** — Optionally hides the encrypted directory using a Windows CLSID rename trick, making it invisible in File Explorer.
+- **Directory Mode** — Place the executable in any folder, run it, and encrypt/decrypt everything inside with one click. File and directory names are also encrypted.
+- **Single File Mode** — Encrypt individual files with self-contained metadata. The encrypted file can be shared independently; the recipient only needs the same executable and the password.
 - **Drag & Drop** — Drag a file onto the window to instantly switch to single-file mode.
-- **No Installation** — Compiles to a single `.exe` (~4 MB). No runtime dependencies.
+- **No Installation** — Compiles to a single executable (~4 MB). No runtime dependencies; copy and run.
 
 ## Screenshots
 
@@ -20,9 +21,16 @@ A lightweight Windows file & folder encryption tool. Single executable, zero ins
 
 ### Download
 
-Grab the latest `vault.exe` from [Releases](../../releases).
+Grab the latest release from [Releases](../../releases):
+
+- Windows: `vault-<version>-windows-x64.zip` (contains `vault.exe`)
+- Linux: `vault-<version>-linux-x64.tar.gz` (contains `vault`)
+
+Both are portable archives — extract and run, no installer.
 
 ### Build from Source
+
+**Windows:**
 
 ```bash
 cargo build --release
@@ -30,30 +38,47 @@ cargo build --release
 
 Output: `target/release/vault.exe`
 
-Requires Rust 1.70+ and Windows.
+**Linux:**
+
+Install the GUI build dependencies first (Debian/Ubuntu example):
+
+```bash
+sudo apt-get install libxkbcommon-dev libwayland-dev libwayland-cursor-dev \
+  libx11-dev libxcursor-dev libxrandr-dev libxi-dev
+```
+
+Then:
+
+```bash
+cargo build --release
+```
+
+Output: `target/release/vault`
+
+Requires Rust 1.70+. Chinese fonts are loaded from the system font directories (`C:/Windows/Fonts` on Windows, `/usr/share/fonts` etc. on Linux); no font files are embedded. If no Chinese font is installed, UI text may render as boxes.
 
 ## Usage
 
 ### Directory Encryption
 
-1. Copy `vault.exe` into the target folder
+1. Copy the executable (`vault.exe` on Windows, `vault` on Linux) into the target folder
 2. Double-click to run
 3. The app auto-detects unencrypted content and shows the encryption UI
-4. Set a password, optionally check "Hide folder after encryption"
+4. Set a password
 5. Click **Encrypt**
-6. All files and subdirectories are encrypted in-place. You can take the exe with you — the folder now contains only garbled filenames and unreadable content.
+6. You can take the executable with you — the folder now contains only garbled filenames and unreadable content
 
 ### Directory Decryption
 
-1. Put `vault.exe` back into the encrypted folder
+1. Put the executable back into the encrypted folder
 2. Double-click to run
 3. The app detects encrypted content and shows the decryption UI
 4. Enter the password, click **Decrypt**
-5. Everything is restored — files, names, directory structure, and timestamps.
+5. Everything is restored — files, names, directory structure, and timestamps
 
 ### Single File Encryption / Decryption
 
-1. Run `vault.exe` (from anywhere)
+1. Run the executable (from anywhere)
 2. Switch to the **Single File** tab
 3. Pick a file (or drag one in), set a password, click **Encrypt** / **Decrypt**
 
@@ -111,28 +136,14 @@ password + fixed salt ──► PBKDF2 ──► key
 key + zero nonce ──► AES-256-CTR(name) ──► hex-encoded + ".dat"
 ```
 
+Encrypted names double in length (hex encoding). The app rejects names whose encrypted form would exceed 255 characters — the shared single-component filename limit on Linux and Windows.
+
 ### Security Notes
 
 - **CTR mode is stream-only** — provides confidentiality but not authentication. A CRC32 checksum guards against accidental corruption and wrong-password detection, but is not a cryptographic MAC.
 - **Partial encryption** leaks the middle portion of large files (> 128 KiB). This is a deliberate speed/size trade-off.
 - **Deterministic name encryption** means identical filenames produce identical ciphertext, leaking name equality.
 - **PBKDF2 at 100k iterations** — reasonable, but memory-hard KDFs (Argon2) would offer stronger resistance against GPU/ASIC attacks.
-
-## Architecture
-
-```
-src/
-├── main.rs          # Entry point, window setup, font loading
-├── app.rs           # GUI (egui), mode detection, user interaction
-├── crypto.rs        # AES-256-CTR, PBKDF2 key derivation
-├── file_ops.rs      # File encrypt/decrypt (partial or full)
-├── dir_ops.rs       # Recursive directory encrypt/decrypt
-├── name_encrypt.rs  # Deterministic filename/dirname encryption
-├── metadata.rs      # Metadata struct, serialization, detection
-├── folder_hide.rs   # Windows CLSID-based folder hiding
-├── validate.rs      # Pre-encryption validation
-└── error.rs         # Error types
-```
 
 ## Dependencies
 

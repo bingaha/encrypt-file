@@ -39,11 +39,16 @@ pub fn decrypt_dir_name(password: &[u8], encrypted: &str) -> Option<String> {
     String::from_utf8(bytes).ok()
 }
 
+// 加密后名称（hex + 可选扩展名）的跨平台安全上限。
+// Linux 单个文件名组件上限 255 字节（NAME_MAX），Windows NTFS 单组件上限 255 字符；
+// 加密后名称为纯 ASCII hex，字节数等于字符数，取两者最小值 255。
+const MAX_ENCRYPTED_NAME_LEN: usize = 255;
+
 pub fn would_exceed_name_limit(name: &str, is_file: bool) -> bool {
     let enc_bytes = name.as_bytes().len();
     let hex_len = enc_bytes * 2;
     let ext_len = if is_file { FILE_EXT.len() } else { 0 };
-    (hex_len + ext_len) > 512
+    (hex_len + ext_len) > MAX_ENCRYPTED_NAME_LEN
 }
 
 #[cfg(test)]

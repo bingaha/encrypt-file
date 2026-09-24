@@ -64,9 +64,10 @@ pub fn decrypt_directory(root: &Path, password: &[u8]) -> Result<Vec<std::path::
     let exe_path = std::env::current_exe().unwrap_or_default();
     let mut processed = Vec::new();
 
-    // First pass: rename directories top-down (shallowest first) so
-    // that after decrypting a parent directory name, the child paths
-    // under the original (encrypted) name are still valid.
+    // Rename directories deepest first (bottom-up) so that each child is
+    // renamed while its parent still carries the (encrypted) name the
+    // recorded path was built from. Shallowest-first would invalidate
+    // every child path as soon as the parent is renamed back.
     let mut dirs: Vec<std::path::PathBuf> = Vec::new();
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path().to_path_buf();
@@ -74,7 +75,7 @@ pub fn decrypt_directory(root: &Path, password: &[u8]) -> Result<Vec<std::path::
             dirs.push(path);
         }
     }
-    dirs.sort_by(|a, b| a.components().count().cmp(&b.components().count()));
+    dirs.sort_by(|a, b| b.components().count().cmp(&a.components().count()));
 
     for dir in &dirs {
         let name = dir
@@ -176,6 +177,31 @@ mod tests {
         assert_eq!(
             fs::read(dir.join("子目录2/file3.txt")).unwrap(),
             b"content3"
+        );
+
+        cleanup(name);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_nested_directories() {
+        let name = "nested";
+        setup(name);
+        let dir = temp_dir(name);
+
+        // 两级以上嵌套目录：加密后父目录名也会变，解密时必须按正确顺序重命名
+        fs::create_dir_all(dir.join("子目录1/子目录1a")).unwrap();
+        fs::write(dir.join("子目录1/子目录1a/deep.txt"), b"deep").unwrap();
+
+        encrypt_directory(&dir, b"password").unwrap();
+        assert!(has_encrypted_files(&dir));
+
+        decrypt_directory(&dir, b"password").unwrap();
+
+        assert!(dir.join("子目录1/子目录1a").exists());
+        assert!(dir.join("子目录1/子目录1a/deep.txt").exists());
+        assert_eq!(
+            fs::read(dir.join("子目录1/子目录1a/deep.txt")).unwrap(),
+            b"deep"
         );
 
         cleanup(name);

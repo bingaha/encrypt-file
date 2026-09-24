@@ -9,7 +9,15 @@ env:
 
 jobs:
   release:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset_os: windows
+          - os: ubuntu-latest
+            asset_os: linux
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
@@ -17,6 +25,20 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      # eframe/winit 在 Linux 上的编译期系统依赖（均为绿色运行，无运行时依赖）
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libwayland-cursor-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev
 
       - name: Cache cargo registry & build
         uses: actions/cache@v4
@@ -34,12 +56,21 @@ jobs:
       - name: Run tests
         run: cargo test
 
-      - name: Package
+      # 绿色便携打包：仅包含单个可执行文件，无安装程序
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: Compress-Archive -Path target/release/vault.exe -DestinationPath vault-${{ github.ref_name }}-windows-x64.zip
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p dist
+          cp target/release/vault dist/vault
+          tar -C dist -czf vault-${{ github.ref_name }}-linux-x64.tar.gz vault
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: vault-${{ github.ref_name }}-windows-x64.zip
+          files: vault-${{ github.ref_name }}-${{ matrix.asset_os }}-x64.*
