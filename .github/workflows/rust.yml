@@ -27,6 +27,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       # eframe/winit 在 Linux 上的编译期系统依赖（均为绿色运行，无运行时依赖）
+      # 覆盖 X11 (GLX) 与 Wayland (EGL) 两种后端
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -34,11 +35,12 @@ jobs:
           sudo apt-get install -y \
             libxkbcommon-dev \
             libwayland-dev \
-            libwayland-cursor-dev \
             libx11-dev \
             libxcursor-dev \
             libxrandr-dev \
-            libxi-dev
+            libxi-dev \
+            libegl-dev \
+            libgl-dev
 
       - name: Cache cargo registry & build
         uses: actions/cache@v4

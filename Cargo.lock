@@ -3401,7 +3401,7 @@ dependencies = [
 
 [[package]]
 name = "vault"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "aes",
  "crc32fast",
